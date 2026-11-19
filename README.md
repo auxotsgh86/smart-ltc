@@ -11,6 +11,7 @@
 - **店內量測拿來集點，居家量測拿來追蹤**（血壓照 722 原則）。
 - **不儲存身分證字號**；姓名電話加密；所有存取留稽核紀錄。
 - 客人端做在 **LINE** 裡，不用另外裝 App；支援家屬代填。
+- **語音健康日誌**：不舒服時在 LINE 講一段話，自動轉文字、整理成看診用的 SOAP「S」。
 - 內部用 SQLite，對外交換輸出 **FHIR（衛福部 TW Core IG）**。
 
 ## 文件
@@ -19,7 +20,7 @@
 |---|---|
 | [docs/decisions.md](docs/decisions.md) | 已確定的業務與設計決定、待確認事項 |
 | [docs/architecture.md](docs/architecture.md) | 系統架構、技術選型、業務規則、API、FHIR 對應、開發階段 |
-| [db/001_init.sql](db/001_init.sql) | 第一版 SQLite 資料表與預設資料 |
+| [db/](db/) | SQLite 資料表（001 初始、002 健康日誌與居家安全） |
 
 ## 原型
 

@@ -14,6 +14,26 @@
 - **語音健康日誌**：不舒服時在 LINE 講一段話，自動轉文字、整理成看診用的 SOAP「S」。
 - 內部用 SQLite，對外交換輸出 **FHIR（衛福部 TW Core IG）**。
 
+## 畫面預覽
+
+> 以下為原型截圖，資料皆為虛構。
+
+### 藥局櫃檯版（藥師操作）
+
+| 報到：插健保卡或掃會員碼 | 逐步量測：儀器數值自動帶入 |
+|---|---|
+| <img src="docs/screenshots/counter-1-checkin.png" width="420" alt="櫃檯報到畫面"> | <img src="docs/screenshots/counter-2-measure.png" width="420" alt="量測血壓畫面"> |
+| **今天的結果：燈號＋白話說明＋本月集點** | **關懷名單：偏高或久未回訪的客人** |
+| <img src="docs/screenshots/counter-3-result.png" width="420" alt="今日結果畫面"> | <img src="docs/screenshots/counter-4-care.png" width="420" alt="關懷名單畫面"> |
+
+### 客人手機版（不用識字）
+
+| 記錄：選儀器、早晚、拍照或按數字 | 按數字：儀器圖上標出要抄的格子 | 結果：表情＋大數字＋語音 | 變化：在家與藥局分開顯示 |
+|---|---|---|---|
+| <img src="docs/screenshots/phone-1-home.png" width="200" alt="手機記錄首頁"> | <img src="docs/screenshots/phone-2-keypad.png" width="200" alt="大鍵盤輸入"> | <img src="docs/screenshots/phone-3-result.png" width="200" alt="結果表情與語音"> | <img src="docs/screenshots/phone-4-trend.png" width="200" alt="血壓變化圖"> |
+
+截圖由 `prototypes/` 的原型自動產生；原型更新後執行 `python scripts/screenshots.py` 重新截圖。
+
 ## 文件
 
 | 檔案 | 內容 |

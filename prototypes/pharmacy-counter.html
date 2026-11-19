@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>社區藥局健康站原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm pharmacy counter; one obvious next button, words a grandma understands
+   IDEA: a guided counter script — 接待 → 量測 → 解說 → 下一位, like a stamped health passbook
+   PICTURE: the working flow itself; card sliding into a reader, big traffic lights for results
+   COLOUR and TYPE: pharmacy green dominant, mint support, coral accent; Noto Sans TC, 18px base
+   LAYOUT: green top band with two buttons only, one centred column, huge primary button at bottom */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0e1a17);--ink:light-dark(#10231d,#e6f1ed);--mute:light-dark(#566a63,#9db3ab);
+--brand:light-dark(#0b7a5c,#2fb98f);--soft:light-dark(#e8f4ef,#15302a);--line:light-dark(#d3e4dc,#25443b);
+--accent:light-dark(#d9483a,#ff7d68);--yel:light-dark(#c98a00,#f2b640);--grn:light-dark(#1f9d55,#4bd685);--card:light-dark(#fff,#132420)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.6 "Noto Sans TC",system-ui,sans-serif;overflow-x:clip}
+header{background:var(--brand);color:#fff;padding:14px max(4vw,14px)}
+header .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;max-width:820px;margin:auto}
+h1{font-size:clamp(20px,4vw,26px);line-height:1.15;margin:0;font-weight:900}
+h1 small{display:block;font-size:13px;font-weight:500;opacity:.85}
+.top{display:flex;gap:8px}
+.top button{border:2px solid rgba(255,255,255,.6);background:transparent;color:#fff;font:700 16px "Noto Sans TC";padding:8px 14px;min-height:46px;border-radius:12px;cursor:pointer;white-space:nowrap}
+.top button.on{background:#fff;color:var(--brand);border-color:#fff}
+.top .badge{background:var(--accent);color:#fff;border-radius:999px;padding:0 8px;font-size:14px;margin-left:4px}
+main{max-width:820px;margin:auto;padding:22px max(4vw,14px) 120px}
+h2{font-size:clamp(24px,5vw,32px);margin:0 0 6px;line-height:1.2}
+.sub{color:var(--mute);margin:0 0 18px;font-size:17px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px}
+.big{display:block;width:100%;border:0;background:var(--brand);color:#fff;font:900 22px "Noto Sans TC";padding:18px;min-height:68px;border-radius:16px;cursor:pointer;margin-bottom:12px}
+.big.alt{background:var(--soft);color:var(--brand)}
+.big:disabled{opacity:.45;cursor:wait}
+.link{border:0;background:none;color:var(--brand);font:700 17px "Noto Sans TC";text-decoration:underline;cursor:pointer;padding:10px 4px;min-height:44px}
+.row2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+label{display:block;color:var(--mute);margin-bottom:14px;font-size:17px}
+input,select{display:block;width:100%;margin-top:4px;font:22px "Noto Sans TC";padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);min-height:58px}
+.reader{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:center}
+.reader svg{width:100%;height:auto;max-height:230px}
+#nhi,#phone{transition:transform .9s cubic-bezier(.3,.7,.2,1)}
+.reading #nhi{transform:translateY(60px)}
+@media(prefers-reduced-motion:reduce){#nhi{transition:none}}
+.steps{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.steps span{flex:1 1 0;text-align:center;padding:8px 4px;border-radius:10px;background:var(--soft);color:var(--mute);font-size:15px;white-space:nowrap}
+.steps span.on{background:var(--brand);color:#fff;font-weight:700}
+.steps span.ok{color:var(--brand);font-weight:700}
+.reading-val{font-size:clamp(48px,12vw,72px);font-weight:900;line-height:1;margin:10px 0;white-space:nowrap}
+.reading-val small{font-size:20px;font-weight:500;color:var(--mute)}
+.res{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
+.res:first-child{border-top:0}
+.light{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px}
+.l-g{background:var(--grn)}.l-y{background:var(--yel)}.l-r{background:var(--accent)}.l-n{background:var(--mute)}
+.res b{font-size:24px;white-space:nowrap}
+.res p{margin:2px 0 0;font-size:17px}
+.bar{height:14px;background:var(--soft);border-radius:999px;overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--brand);border-radius:999px}
+.prog{margin-bottom:12px}.prog .h{display:flex;justify-content:space-between}
+.gift{display:flex;gap:10px;flex-wrap:wrap}.gift button{flex:1 1 140px}
+.fig{position:relative;min-height:230px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:14px;font-size:14px;color:var(--mute);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+.qr{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;align-items:center}
+.qr svg{width:200px;height:200px;background:#fff;border-radius:12px;padding:10px}
+.care{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.tag{display:inline-block;background:light-dark(#fde8e4,#3a1a15);color:var(--accent);border-radius:8px;padding:2px 10px;font-size:15px;margin:4px 6px 0 0;font-weight:700}
+.tag.ok{background:var(--soft);color:var(--brand)}
+.note{font-size:14px;color:var(--mute)}
+.privacy{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:15px;color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:14px 22px;border-radius:14px;font-size:17px;max-width:92vw;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9}
+.toast.on{opacity:1}
+@media(max-width:600px){.reader,.qr{grid-template-columns:1fr}.qr svg{margin:auto}.steps span{font-size:13px}}
+</style></head>
+<body>
+<header><div class="row">
+  <h1>幸福社區藥局 健康站<small>原型示範・所有資料皆為虛構</small></h1>
+  <div class="top"><button data-nav="start" id="navStart">接待客人</button><button data-nav="care" id="navCare">關懷名單</button></div>
+</div></header>
+<main id="view"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+{
+/* ---------- demo data (pharmacy stores member number, never the full ID number) ---------- */
+const T=new Date();T.setHours(0,0,0,0);
+const dayOff=o=>{const x=new Date(T);x.setDate(x.getDate()-o);return x};
+const md=d=>`${d.getMonth()+1}/${d.getDate()}`;
+const mkey=d=>`${d.getFullYear()}-${d.getMonth()+1}`;
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const members=[
+ {no:'000101',name:'王美華',birth:'1958-03-12',sex:'女',phone:'0912-345-678',focus:'血壓',p:.42,bp:[150,92],glu:105,wt:62,fat:33,bmd:-1.6},
+ {no:'000102',name:'陳建志',birth:'1965-08-02',sex:'男',phone:'0933-222-111',focus:'血糖',p:.36,bp:[132,84],glu:148,wt:81,fat:27,bmd:null},
+ {no:'000103',name:'林秀琴',birth:'1949-11-30',sex:'女',phone:'0922-777-888',focus:'骨密度',p:.22,bp:[126,76],glu:98,wt:51,fat:29,bmd:-2.6},
+ {no:'000104',name:'張家豪',birth:'1978-01-15',sex:'男',phone:'0955-666-777',focus:'體重',p:.12,bp:[128,82],glu:101,wt:92,fat:31,bmd:null}];
+const recs=[],claims={},called={};
+members.forEach(m=>{claims[m.no]={};let lastB=999;
+ for(let o=120;o>=1;o--){if(rnd()>m.p)continue;const d=dayOff(o),k=(120-o)/120;
+  recs.push({no:m.no,d,type:'bp',v:{sys:Math.round(m.bp[0]-8*k+rnd()*10-5),dia:Math.round(m.bp[1]-4*k+rnd()*6-3)}});
+  if(rnd()<(m.focus=='血糖'?.9:.55))recs.push({no:m.no,d,type:'glu',v:{val:Math.round(m.glu-12*k+rnd()*16-8),when:'空腹'}});
+  if(rnd()<.6)recs.push({no:m.no,d,type:'body',v:{wt:+(m.wt-1.8*k+rnd()*.8).toFixed(1),fat:+(m.fat-1.2*k+rnd()*.6).toFixed(1)}});
+  if(m.bmd!==null&&lastB-o>60){recs.push({no:m.no,d,type:'bmd',v:{t:+(m.bmd+rnd()*.2).toFixed(1)}});lastB=o}
+ }});
+
+const GOALS={bp:{n:8,l:'血壓'},glu:{n:4,l:'血糖'},body:{n:4,l:'體重體脂'}};
+const GIFTS=[{n:'抽取式面紙一串',need:1},{n:'益生菌體驗包',need:1},{n:'保養品試用組',need:3}];
+const STEPS=[{k:'bp',l:'血壓',dev:'血壓計',tip:'請客人坐好、手臂放平，按下血壓計的「開始」鍵'},{k:'glu',l:'血糖',dev:'血糖機',tip:'請客人消毒指尖，試紙插入血糖機後採血'},{k:'body',l:'體重體脂',dev:'體脂計',tip:'請客人脫鞋、赤腳站上體脂計'},{k:'bmd',l:'骨密度',dev:'骨密度儀',tip:'每 3 個月量一次即可，今天不需要可以跳過'}];
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const age=b=>{const d=new Date(b);let a=T.getFullYear()-d.getFullYear();if(T<new Date(T.getFullYear(),d.getMonth(),d.getDate()))a--;return a};
+const byM=no=>recs.filter(r=>r.no==no).sort((a,b)=>a.d-b.d);
+const hist=(no,t)=>byM(no).filter(r=>r.type==t);
+const sameMonth=(d,r)=>d.getFullYear()==r.getFullYear()&&d.getMonth()==r.getMonth();
+function monthCount(no,ref){const c={bp:0,glu:0,body:0};byM(no).forEach(r=>{if(sameMonth(r.d,ref)&&c[r.type]!=null)c[r.type]++});return c}
+const achieved=(no,ref)=>{const c=monthCount(no,ref);return Object.keys(GOALS).every(k=>c[k]>=GOALS[k].n)};
+function streak(no){let s=achieved(no,T)?1:0;for(let i=1;i<=12;i++){if(achieved(no,new Date(T.getFullYear(),T.getMonth()-i,1)))s++;else break}return s}
+/* traffic light + plain words a customer understands */
+function judge(r){const v=r.v;
+ if(r.type=='bp'){const c=v.sys>=140||v.dia>=90?'r':v.sys>=130||v.dia>=80?'y':'g';return{c,t:{g:'很好，在目標 130/80 以內',y:'比目標 130/80 高一點，記得按時吃藥、少鹽',r:'偏高，請藥師多關心，持續偏高要回診'}[c]}}
+ if(r.type=='glu'){const c=v.val>=126?'r':v.val>=100?'y':'g';return{c,t:{g:'空腹血糖正常',y:'空腹血糖稍高，飲食少甜少精緻澱粉',r:'空腹血糖偏高，建議回診與醫師討論'}[c]}}
+ if(r.type=='bmd'){const c=v.t<=-2.5?'r':v.t<-1?'y':'g';return{c,t:{g:'骨密度正常',y:'骨量減少，多曬太陽、補充鈣質、適度運動',r:'達骨質疏鬆範圍，建議就醫評估'}[c]}}
+ return{c:'n',t:'體脂率 '+v.fat+'%'}}
+const LW={g:'好',y:'注意',r:'偏高',n:'記錄'};
+const show=r=>r.type=='bp'?`${r.v.sys}/${r.v.dia}`:r.type=='glu'?`${r.v.val}`:r.type=='body'?`${r.v.wt} kg`:`T ${r.v.t}`;
+const unit={bp:'mmHg',glu:'mg/dL',body:'',bmd:''};
+function careReasons(no){const a=[],b=hist(no,'bp').pop(),g=hist(no,'glu').pop(),last=byM(no).pop();
+ if(b&&judge(b).c=='r')a.push('血壓偏高');if(g&&judge(g).c=='r')a.push('血糖偏高');
+ if(!last||(T-last.d)/864e5>21)a.push(`${last?Math.round((T-last.d)/864e5):'很多'} 天沒來量`);return a}
+let tt;const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2800)};
+
+/* ---------- state ---------- */
+let scr='start',cur=null,step=0,reading=false,pending=null,manual=false,today=[],range=90,cardIdx=0,search=false,qr=false,newNo=null;
+const M=()=>members.find(m=>m.no==cur);
+
+/* ---------- screens ---------- */
+const S={};
+S.start=()=>`<h2>下一位客人</h2><p class="sub">請客人<b>插健保卡</b>，或<b>打開手機的會員 QR Code</b> 對準掃描器</p>
+ <div class="card reader ${reading?'reading':''}">
+  <svg viewBox="0 0 320 220" aria-label="健保卡插入讀卡機">
+   <rect x="40" y="150" width="240" height="56" rx="12" fill="var(--soft)" stroke="var(--line)"/>
+   <rect x="80" y="146" width="160" height="10" rx="5" fill="var(--ink)" opacity=".75"/>
+   <circle cx="256" cy="178" r="7" fill="${reading?'var(--accent)':'var(--brand)'}"/>
+   <g id="nhi"><rect x="90" y="18" width="140" height="136" rx="10" fill="var(--brand)"/>
+    <rect x="104" y="34" width="34" height="26" rx="4" fill="#f2c94c"/><rect x="104" y="74" width="80" height="8" rx="4" fill="#fff" opacity=".85"/>
+    <rect x="104" y="90" width="56" height="8" rx="4" fill="#fff" opacity=".6"/>
+    <text x="160" y="132" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">全民健康保險卡</text></g>
+   <rect x="78" y="150" width="164" height="6" fill="var(--soft)"/>
+  </svg>
+  <div>${reading?`<p style="font-size:22px;font-weight:700">讀取中，請稍候…</p>`:`
+   <button class="big" data-act="card">模擬：插入健保卡</button>
+   <button class="big alt" data-act="scan">模擬：掃手機 QR Code</button>`}
+  </div></div>
+ <div class="row2"><button class="big alt" data-act="search">客人沒帶卡？用電話找</button><button class="big alt" data-act="new">第一次來？加入會員</button></div>
+ ${search?`<div class="card"><label>輸入電話末 3 碼或姓名<input id="q" inputmode="search" autocomplete="off" placeholder="例如 678 或 王"></label><div id="qres"></div></div>`:''}
+ <p class="privacy">🔒 系統只用健保卡比對會員編號，<b>不儲存身分證字號</b>。</p>`;
+
+S.newm=()=>newNo?`<h2>加入成功</h2><p class="sub">會員編號 <b>${newNo}</b></p>
+ <div class="card qr">${qrSvg(newNo)}<div><p style="font-size:20px;margin-top:0">請客人用手機 <b>LINE 掃這個 QR Code</b>，以後報表都會傳到他的 LINE，下次來也可以直接出示會員碼。</p></div></div>
+ <button class="big" data-act="begin">開始量測</button>`:
+ `<h2>加入會員</h2><p class="sub">請客人插健保卡，姓名生日會自動帶入（示範中請直接填）</p>
+ <form class="card" id="newForm"><div class="row2"><label>姓名<input name="name" required></label><label>電話<input name="phone" inputmode="tel" required></label>
+ <label>生日<input name="birth" type="date" required></label><label>性別<select name="sex"><option>女</option><option>男</option></select></label></div>
+ <label>最想追蹤<select name="focus"><option>血壓</option><option>血糖</option><option>體重</option><option>骨密度</option></select></label>
+ <label style="color:var(--ink);display:flex;gap:10px;align-items:flex-start"><input type="checkbox" name="ok" required style="width:28px;min-height:28px;margin-top:4px;flex:none">客人已在紙本「健康資料同意書」簽名</label>
+ <button class="big">建立會員</button></form>`;
+
+S.measure=()=>{const m=M(),st=STEPS[step],last=hist(m.no,st.k).pop();
+ return `<p class="sub" style="margin:0">${esc(m.name)}・${m.sex}・${age(m.birth)} 歲・會員 ${m.no}</p><h2>第 ${step+1} 步：量${st.l}</h2>
+ <div class="steps">${STEPS.map((s,i)=>`<span class="${i==step?'on':today.some(r=>r.type==s.k)?'ok':''}">${today.some(r=>r.type==s.k)?'✓ ':''}${s.l}</span>`).join('')}</div>
+ <div class="card"><p style="font-size:20px;margin-top:0">${st.tip}</p>
+ ${pending?`<p class="note" style="margin:0">${st.dev}傳來的數字</p><div class="reading-val">${show(pending)} <small>${unit[st.k]}</small></div>
+   <p><span class="light l-${judge(pending).c}" style="display:inline-grid;width:auto;height:auto;padding:2px 12px;border-radius:8px">${LW[judge(pending).c]}</span>　${judge(pending).t}</p>
+   <button class="big" data-act="ok">數字正確，下一步</button><button class="link" data-act="redo">重量一次</button>`:
+  manual?manualForm(st.k):
+  `<button class="big" data-act="recv" ${reading?'disabled':''}>${reading?'接收中…':'接收'+st.dev+'的數字'}</button>
+   <button class="link" data-act="manual">機器沒連上？手動輸入</button>`}
+ </div>
+ ${last?`<p class="note">上次（${md(last.d)}）：${show(last)} ${unit[st.k]}</p>`:''}
+ <div class="row2"><button class="big alt" data-act="skip">今天不量${st.l}</button>${step>0?`<button class="big alt" data-act="back">回上一步</button>`:''}</div>`};
+function manualForm(k){const f={bp:`<div class="row2"><label>上面的數字（收縮壓）<input name="sys" type="number" inputmode="numeric" min="60" max="260" required></label><label>下面的數字（舒張壓）<input name="dia" type="number" inputmode="numeric" min="30" max="160" required></label></div>`,
+ glu:`<label>血糖數字<input name="val" type="number" inputmode="numeric" min="20" max="600" required></label>`,
+ body:`<div class="row2"><label>體重 kg<input name="wt" type="number" step="0.1" inputmode="decimal" required></label><label>體脂 %<input name="fat" type="number" step="0.1" inputmode="decimal" required></label></div>`,
+ bmd:`<label>T 值（例如 -1.8）<input name="t" type="number" step="0.1" inputmode="decimal" required></label>`}[k];
+ return `<form id="mForm">${f}<button class="big">確定</button></form>`}
+
+S.done=()=>{const m=M(),c=monthCount(m.no,T),ok=achieved(m.no,T),st=streak(m.no),got=claims[m.no][mkey(T)];
+ return `<h2>${esc(m.name)} 今天的結果</h2><p class="sub">照著燈號念給客人聽就可以</p>
+ <div class="card">${today.length?today.map(r=>{const j=judge(r),p=hist(m.no,r.type).filter(x=>x!==r).pop();return `<div class="res"><div class="light l-${j.c}">${LW[j.c]}</div><div>
+  <b>${STEPS.find(s=>s.k==r.type).l}　${show(r)}</b> <span class="note">${unit[r.type]}</span><p>${j.t}</p>${p?`<p class="note">上次 ${md(p.d)}：${show(p)}</p>`:''}</div></div>`}).join(''):'<p>今天沒有量任何項目</p>'}</div>
+ <div class="card"><b style="font-size:20px">本月集點</b>
+  ${Object.keys(GOALS).map(k=>`<div class="prog"><div class="h"><span>${GOALS[k].l}</span><b>${c[k]} / ${GOALS[k].n} 次</b></div><div class="bar"><i style="width:${Math.min(100,100*c[k]/GOALS[k].n)}%"></i></div></div>`).join('')}
+  ${got?`<p style="font-size:20px">本月已領：<b>${esc(got)}</b></p>`:ok?`<p style="font-size:20px;color:var(--accent);font-weight:900">本月達標了！請客人選一份禮物：</p><div class="gift">${GIFTS.map(g=>`<button class="big ${st>=g.need?'':'alt'}" data-gift="${g.n}" ${st>=g.need?'':'disabled'}>${g.n}${g.need>1?`<br><small style="font-size:14px">連續 ${g.need} 個月達標（目前 ${st}）</small>`:''}</button>`).join('')}</div>`:
+  `<p>再量 ${Object.keys(GOALS).map(k=>Math.max(0,GOALS[k].n-c[k])?`${GOALS[k].l} ${GOALS[k].n-c[k]} 次`:'').filter(Boolean).join('、')} 就能領本月小禮物</p>`}</div>
+ <div class="row2"><button class="big alt" data-act="report">給客人看趨勢圖</button><button class="big alt" data-act="qr">傳報表到客人手機</button></div>
+ ${qr?`<div class="card qr">${qrSvg(m.no+mkey(T))}<div><p style="font-size:20px;margin-top:0">請客人用 <b>LINE 掃描</b>，今天的報表和趨勢圖就會存在他的手機。</p><p class="note">已綁定 LINE 的會員，正式版會自動傳送，不用掃。</p></div></div>`:''}
+ <button class="big" data-act="next">完成，接待下一位</button>`};
+
+S.report=()=>{const m=M(),b=hist(m.no,'bp'),first=b.find(r=>r.d>=dayOff(range)),lastB=b[b.length-1];
+ const trend=first&&lastB&&first!==lastB?(lastB.v.sys<first.v.sys?`血壓比 ${md(first.d)} 降了 ${first.v.sys-lastB.v.sys}，有進步！`:`血壓比 ${md(first.d)} 高了 ${lastB.v.sys-first.v.sys}，要多注意`):'';
+ return `<h2>${esc(m.name)} 的趨勢圖</h2><p class="sub">${trend}</p>
+ <div class="row2" style="margin-bottom:12px">${[30,90].map(n=>`<button class="big ${range==n?'':'alt'}" data-rg="${n}">近 ${n} 天</button>`).join('')}</div>
+ <div class="card"><b>血壓</b><div class="legend"><span><i style="background:var(--brand)"></i>上面的數字（收縮壓）</span><span><i style="background:var(--accent)"></i>下面的數字（舒張壓）</span><span>虛線：目標 130/80</span></div><div class="fig" data-ch="bp"><svg></svg></div></div>
+ <div class="card"><b>血糖</b><div class="legend"><span><i style="background:var(--yel)"></i>空腹血糖</span><span>虛線：126</span></div><div class="fig" data-ch="glu"><svg></svg></div></div>
+ <div class="card"><b>體重</b><div class="fig" data-ch="body"><svg></svg></div></div>
+ <button class="big" data-act="backdone">回到今天的結果</button>`};
+
+S.care=()=>{const list=members.map(m=>({m,r:careReasons(m.no)})).filter(x=>x.r.length);
+ return `<h2>需要關心的客人</h2><p class="sub">有空時打個電話問候，邀請他回來量</p>
+ ${list.length?list.map(({m,r})=>`<div class="card care"><div><b style="font-size:22px">${esc(m.name)}</b>　${m.sex}・${age(m.birth)} 歲<br>${r.map(t=>`<span class="tag">${t}</span>`).join('')}${called[m.no]?'<span class="tag ok">今天已聯絡</span>':''}<p style="margin:6px 0 0">電話 <b style="white-space:nowrap">${m.phone}</b></p></div>
+  <button class="big ${called[m.no]?'alt':''}" style="width:auto;margin:0" data-call="${m.no}">${called[m.no]?'取消標記':'已打電話'}</button></div>`).join(''):'<div class="card">目前沒有需要關心的客人 👍</div>'}
+ <p class="note">提醒條件：最近一次血壓 ≥ 140/90、空腹血糖 ≥ 126，或超過 21 天沒來量。正式版可調整。</p>`};
+
+/* fake QR (illustration only) */
+function qrSvg(txt){let h=0;for(const ch of txt)h=(h*31+ch.charCodeAt(0))>>>0;let s=h||7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+ let o='';const N=21,fz=(x,y)=>(x<8&&y<8)||(x>12&&y<8)||(x<8&&y>12);
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!fz(x,y)&&r()<.5)o+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;
+ const f=(x,y)=>`<rect x="${x}" y="${y}" width="7" height="7"/><rect x="${x+1}" y="${y+1}" width="5" height="5" fill="#fff"/><rect x="${x+2}" y="${y+2}" width="3" height="3"/>`;
+ return `<svg viewBox="0 0 21 21" fill="#10231d" shape-rendering="crispEdges" aria-label="示意 QR Code">${o}${f(0,0)}${f(14,0)}${f(0,14)}</svg>`}
+
+/* charts */
+let ro;
+function chart(el){const svg=el.querySelector('svg'),m=M(),t=el.dataset.ch,from=dayOff(range),rs=hist(m.no,t).filter(r=>r.d>=from);
+ const S2=t=='bp'?[{c:'var(--brand)',p:rs.map(r=>[r.d,r.v.sys])},{c:'var(--accent)',p:rs.map(r=>[r.d,r.v.dia])}]:t=='glu'?[{c:'var(--yel)',p:rs.map(r=>[r.d,r.v.val])}]:[{c:'var(--brand)',p:rs.map(r=>[r.d,r.v.wt])}];
+ const refs=t=='bp'?[130,80]:t=='glu'?[126]:[];const W=svg.clientWidth,H=svg.clientHeight;if(!W)return;
+ if(!rs.length){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--mute)" font-size="16">這段期間沒有資料</text>`;return}
+ const ys=S2.flatMap(s=>s.p.map(p=>p[1])).concat(refs);let lo=Math.min(...ys),hi=Math.max(...ys);const pd=(hi-lo)*.15||2;lo-=pd;hi+=pd;
+ const L=44,R=12,Tp=12,B=28,x=d=>L+(W-L-R)*(d-from)/(T-from),y=v=>Tp+(H-Tp-B)*(1-(v-lo)/(hi-lo));let g='';const nT=W<520?3:5;
+ for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+5}" text-anchor="end" font-size="13" fill="var(--mute)">${hi-lo<10?v.toFixed(1):Math.round(v)}</text>`}
+ for(let i=0;i<nT;i++){const d=new Date(+from+(T-from)*i/(nT-1));g+=`<text x="${x(d)}" y="${H-6}" text-anchor="${i==0?'start':i==nT-1?'end':'middle'}" font-size="13" fill="var(--mute)">${md(d)}</text>`}
+ refs.forEach(v=>g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--accent)" stroke-dasharray="5 5" opacity=".6"/>`);
+ S2.forEach(s=>{g+=`<polyline fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round" points="${s.p.map(p=>x(p[0])+','+y(p[1])).join(' ')}"/>`+s.p.map(p=>`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="${s.c}"><title>${md(p[0])}：${p[1]}</title></circle>`).join('')});
+ svg.innerHTML=g}
+
+/* ---------- render & events ---------- */
+function render(){$('#view').innerHTML=S[scr]();
+ $('#navStart').classList.toggle('on',scr!='care');$('#navCare').classList.toggle('on',scr=='care');
+ const n=members.filter(m=>careReasons(m.no).length&&!called[m.no]).length;$('#navCare').innerHTML='關懷名單'+(n?`<span class="badge">${n}</span>`:'');
+ if(ro)ro.disconnect();const figs=document.querySelectorAll('.fig');if(figs.length){ro=new ResizeObserver(()=>figs.forEach(chart));figs.forEach(f=>ro.observe(f))}}
+function go(s){scr=s;render();window.scrollTo({top:0})}
+function checkin(no){cur=no;step=0;today=[];pending=null;manual=false;qr=false;search=false;toast('歡迎 '+M().name+'，開始量測');go('measure')}
+function fakeReading(k){const m=M(),l=hist(m.no,k).pop(),j=n=>Math.round((rnd()-.5)*n);
+ if(k=='bp')return{sys:(l?l.v.sys:128)+j(10),dia:(l?l.v.dia:80)+j(6)};if(k=='glu')return{val:(l?l.v.val:100)+j(14),when:'空腹'};
+ if(k=='body')return{wt:+((l?l.v.wt:65)+(rnd()-.6)*.6).toFixed(1),fat:+((l?l.v.fat:28)+(rnd()-.5)*.4).toFixed(1)};return{t:+((l?l.v.t:-1.2)+(rnd()-.4)*.2).toFixed(1)}}
+function nextStep(){pending=null;manual=false;if(step<STEPS.length-1){step++;render()}else go('done')}
+function save(v){const r={no:cur,d:new Date(T),type:STEPS[step].k,v};recs.push(r);today.push(r);pending=null;manual=false}
+
+document.addEventListener('click',e=>{const q=s=>e.target.closest(s);let el;
+ if(el=q('[data-nav]'))return go(el.dataset.nav);
+ if(el=q('[data-pick]'))return checkin(el.dataset.pick);
+ if(el=q('[data-rg]')){range=+el.dataset.rg;return render()}
+ if(el=q('[data-gift]')){claims[cur][mkey(T)]=el.dataset.gift;render();return toast('已登記：'+el.dataset.gift+'，請從櫃檯拿給客人')}
+ if(el=q('[data-call]')){called[el.dataset.call]=!called[el.dataset.call];return render()}
+ if(!(el=q('[data-act]')))return;const a=el.dataset.act;
+ if(a=='card'||a=='scan'){reading=true;render();setTimeout(()=>{reading=false;checkin(members[cardIdx++%members.length].no)},a=='card'?1300:600)}
+ else if(a=='search'){search=!search;render();if(search)$('#q').focus()}
+ else if(a=='new'){newNo=null;go('newm')}
+ else if(a=='begin')checkin(newNo);
+ else if(a=='recv'){reading=true;render();setTimeout(()=>{reading=false;pending={type:STEPS[step].k,v:fakeReading(STEPS[step].k)};render()},1200)}
+ else if(a=='ok'){save(pending.v);toast('已記錄並蓋章 ✓');nextStep()}
+ else if(a=='redo'){pending=null;render()}
+ else if(a=='manual'){manual=true;render()}
+ else if(a=='skip')nextStep();
+ else if(a=='back'){step--;pending=null;manual=false;today=today.filter(r=>r.type!=STEPS[step].k||(recs.splice(recs.indexOf(r),1),false));render()}
+ else if(a=='report')go('report');
+ else if(a=='backdone')go('done');
+ else if(a=='qr'){qr=true;render()}
+ else if(a=='next'){cur=null;go('start')}
+});
+document.addEventListener('input',e=>{if(e.target.id!='q')return;const v=e.target.value.trim();
+ $('#qres').innerHTML=v?members.filter(m=>m.name.includes(v)||m.phone.replace(/-/g,'').endsWith(v)).map(m=>`<button class="big alt" data-pick="${m.no}">${esc(m.name)}・電話末三碼 ${m.phone.slice(-3)}</button>`).join('')||'<p>找不到，請確認或加入會員</p>':''});
+document.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);
+ if(e.target.id=='newForm'){newNo=String(101+members.length).padStart(6,'0');members.push({no:newNo,name:f.get('name'),birth:f.get('birth'),sex:f.get('sex'),phone:f.get('phone'),focus:f.get('focus')});claims[newNo]={};render();return}
+ if(e.target.id=='mForm'){const v={};for(const[k,x]of f)v[k]=+x;if(STEPS[step].k=='glu')v.when='空腹';pending={type:STEPS[step].k,v};manual=false;render()}});
+render();
+}
+</script>
+</body>
+</html>
